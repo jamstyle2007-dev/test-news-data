@@ -11,6 +11,11 @@ echo "===== run_watchdog $(date '+%F %T') ====="
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
 TODAY=$(date +%F)
 
+# 待機モード（2台目のMac用）: 判断前に必ずリモート最新へ同期する
+if [ "${TN_STANDBY:-0}" = "1" ]; then
+  git fetch origin main --quiet && git reset --hard origin/main --quiet
+fi
+
 # パイロット期間（内蔵7本: 〜2026-08-13）は配信不要
 if [[ "$TODAY" < "2026-08-14" ]]; then
   echo "パイロット期間中（$TODAY）。見張り不要"

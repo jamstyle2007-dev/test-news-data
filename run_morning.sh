@@ -12,6 +12,30 @@ echo "===== run_morning $(date '+%F %T') ====="
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
 TODAY="${TN_DATE:-$(date +%F)}"
 
+# 待機モード（2台目のMac用）: TN_STANDBY=1 のとき
+#   ①判断前に必ずリモート最新へ同期する（ローカルの分岐を残さない）
+#   ②本日分がGitHubで公開済みなら何もせず終了＝主機が動いていれば二重生成しない
+# 注意: この同期はコミットしていない変更を消す。開発時は先にコミットしてから実行すること。
+if [ "${TN_STANDBY:-0}" = "1" ]; then
+  echo "[standby] リモート最新に同期"
+  git fetch origin main --quiet && git reset --hard origin/main --quiet
+  if curl -s --max-time 30 \
+      "https://api.github.com/repos/jamstyle2007-dev/test-news-data/contents/daily.json?ref=main" \
+      -H "Accept: application/vnd.github.raw" \
+    | python3 -c "
+import json, sys
+try:
+    d = json.load(sys.stdin)
+    ok = any(i['date'] == '$TODAY' for i in d['entries'])
+except Exception:
+    ok = False
+sys.exit(0 if ok else 1)"; then
+    echo "[standby] 本日分は主機が配信済み。何もせず終了"
+    exit 0
+  fi
+  echo "[standby] 主機が未配信。代わりに生成する"
+fi
+
 notify() {
   osascript -e "display notification \"$1\" with title \"テストに出るニュース 配信\" sound name \"Basso\"" 2>/dev/null || true
 }
