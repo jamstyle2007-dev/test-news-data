@@ -47,9 +47,17 @@ fi
 
 echo "未配信を検知。run_morning を再実行"
 ./run_morning.sh
-sleep 10
 
-if published; then
+# push直後のGitHub APIは数秒だけ古い値を返すことがある。単発で判定すると
+# 配信できているのに「配信できていません」と誤通知するため、10秒おきに3回確かめる
+# （Money Flash側で2026-09-04に同種の誤検知が発生）。
+OK_PUB=1
+for _ in 1 2 3; do
+  if published; then OK_PUB=0; break; fi
+  sleep 10
+done
+
+if [ "$OK_PUB" = "0" ]; then
   echo "復旧成功"
   notify "復旧成功: 本日分を配信しました（$TODAY）"
 else
