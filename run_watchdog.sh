@@ -26,21 +26,32 @@ notify() {
   osascript -e "display notification \"$1\" with title \"テストに出るニュース 見張り\" sound name \"Basso\"" 2>/dev/null || true
 }
 
+# 0=配信済み / 1=未配信 / 2=判定不能（GitHubに到達できない）
+# 「通信できない」を「未配信」と断定しないこと。2026-09-19に一時的な通信断で
+# 配信済みの日に復旧が走り、誤って「配信できていません」と通知した。
 published() {
-  curl -s --max-time 30 \
+  local body
+  body=$(curl -sf --max-time 30 \
     "https://api.github.com/repos/jamstyle2007-dev/test-news-data/contents/daily.json?ref=main" \
-    -H "Accept: application/vnd.github.raw" \
-  | python3 -c "
+    -H "Accept: application/vnd.github.raw") || return 2
+  [ -n "$body" ] || return 2
+  printf '%s' "$body" | python3 -c "
 import json, sys
 try:
     d = json.load(sys.stdin)
-    ok = any(i['date'] == '$TODAY' for i in d['entries'])
 except Exception:
-    ok = False
-sys.exit(0 if ok else 1)"
+    sys.exit(2)
+sys.exit(0 if any(i['date'] == '$TODAY' for i in d['entries']) else 1)"
 }
 
-if published; then
+STATE=0; published || STATE=$?
+if [ "$STATE" = "2" ]; then
+  # 通信が無ければ記事の生成自体ができないので、ここで騒がず次の見張りに委ねる
+  echo "GitHubに到達できず判定不能。復旧は行わない（次回の見張りで再確認）"
+  exit 0
+fi
+
+if [ "$STATE" = "0" ]; then
   echo "本日分($TODAY)は配信済み。OK"
   exit 0
 fi
@@ -53,9 +64,16 @@ echo "未配信を検知。run_morning を再実行"
 # （Money Flash側で2026-09-04に同種の誤検知が発生）。
 OK_PUB=1
 for _ in 1 2 3; do
-  if published; then OK_PUB=0; break; fi
+  published && { OK_PUB=0; break; }
+  OK_PUB=$?
   sleep 10
 done
+
+if [ "$OK_PUB" = "2" ]; then
+  # 通信不可では確認も生成もできない。誤警報を出さず次回の見張りに委ねる
+  echo "通信不可で確認できない。通知せず終了（次回の見張りで再確認）"
+  exit 0
+fi
 
 if [ "$OK_PUB" = "0" ]; then
   echo "復旧成功"
