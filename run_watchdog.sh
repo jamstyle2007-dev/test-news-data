@@ -9,6 +9,7 @@ exec >> "$LOG" 2>&1
 echo "===== run_watchdog $(date '+%F %T') ====="
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+if [ -r "$HOME/bin/claude-auth-env.sh" ]; then . "$HOME/bin/claude-auth-env.sh"; fi  # 自動ジョブ用の長期トークン（無ければ通常ログインのまま）
 TODAY=$(date +%F)
 
 # 待機モード（2台目のMac用）: 判断前に必ずリモート最新へ同期する

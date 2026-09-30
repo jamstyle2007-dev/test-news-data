@@ -10,6 +10,7 @@ exec >> "$LOG" 2>&1
 echo "===== run_morning $(date '+%F %T') ====="
 
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
+if [ -r "$HOME/bin/claude-auth-env.sh" ]; then . "$HOME/bin/claude-auth-env.sh"; fi  # 自動ジョブ用の長期トークン（無ければ通常ログインのまま）
 TODAY="${TN_DATE:-$(date +%F)}"
 
 # 二重起動の防止（2026-09-21追加・Money Flashと同じ手当て）
