@@ -12,6 +12,10 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
 if [ -r "$HOME/bin/claude-auth-env.sh" ]; then . "$HOME/bin/claude-auth-env.sh"; fi  # 自動ジョブ用の長期トークン（無ければ通常ログインのまま）
 TODAY=$(date +%F)
 
+# 保管場所が競合で止まったままなら、判断の前に GitHub の本体へ合わせ直す（2026-11-16追加）。
+# 壊れていなければ何もしない。経緯は tools/git_heal.sh の頭に書いた。
+bash tools/git_heal.sh || true
+
 # 待機モード（2台目のMac用）: 判断前に必ずリモート最新へ同期する
 if [ "${TN_STANDBY:-0}" = "1" ]; then
   git fetch origin main --quiet && git reset --hard origin/main --quiet

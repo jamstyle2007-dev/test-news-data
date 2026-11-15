@@ -19,4 +19,5 @@ for i in 1 2 3; do
     sleep 20
   fi
 done
+bash tools/git_heal.sh || true   # 取り込みが競合で止まったままにしない
 exit 1

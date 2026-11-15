@@ -34,6 +34,10 @@ if [ "$acquired" != "1" ]; then
 fi
 trap 'rm -rf "$LOCK"' EXIT
 
+# 保管場所が競合で止まったままなら、判断の前に GitHub の本体へ合わせ直す（2026-11-16追加）。
+# 壊れていなければ何もしない。経緯は tools/git_heal.sh の頭に書いた。
+bash tools/git_heal.sh || true
+
 # 待機モード（2台目のMac用）: TN_STANDBY=1 のとき
 #   ①判断前に必ずリモート最新へ同期する（ローカルの分岐を残さない）
 #   ②本日分がGitHubで公開済みなら何もせず終了＝主機が動いていれば二重生成しない
